@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "nexus"
+name = "airm"
 version = "0.1.0"
