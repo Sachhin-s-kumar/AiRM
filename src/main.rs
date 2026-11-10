@@ -29,6 +29,22 @@ fn main() {
 
         println!("CPU Usage: {:.2}%", cpu_usage);
 
+        let memory = system::memory::get_memory_usage(&mut sys);
+
+        let gb = 1024.0 * 1024.0 * 1024.0;
+
+        println!("RAM Usage: {:.2}%", memory.usage_percent);
+
+        println!(
+            "RAM: {:.2} GB / {:.2} GB",
+            memory.used as f64 / gb,
+            memory.total as f64 / gb
+        );
+
+        println!("Available RAM: {:.2} GB", memory.available as f64 / gb);
+
+        println!("--------------------------------");
+
         // Wait one second before the next reading
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
