@@ -43,6 +43,8 @@ fn main() {
 
         println!("Available RAM: {:.2} GB", memory.available as f64 / gb);
 
+        system::process::display_processes(&mut sys);
+
         println!("--------------------------------");
 
         // Wait one second before the next reading
