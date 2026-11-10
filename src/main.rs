@@ -1,3 +1,8 @@
+mod gpu;
+mod scheduler;
+mod system;
+mod utils;
+
 const APP_NAME: &str = "AiRM";
 const APP_VERSION: &str = "0.1.0";
 
@@ -6,12 +11,27 @@ fn get_version() -> &'static str {
 }
 
 fn main() {
-    println!("================================");
+    println!("==================================");
     println!("       {} v{}", APP_NAME, get_version());
-    println!("================================");
+    println!("==================================");
     println!("AI Training Resource Manager");
     println!("Platform: Fedora Linux");
-    println!("Status: Initializing...");
+    println!("Status: Continuous Monitoring");
+    println!("Press Ctrl + C to stop.");
+    println!("----------------------------------");
+
+    // Initialize system monitor only once
+    let mut sys = sysinfo::System::new_all().expect("Failed to initialize system information");
+
+    // Continuously monitor CPU usage
+    loop {
+        let cpu_usage = system::cpu::get_cpu_usage(&mut sys);
+
+        println!("CPU Usage: {:.2}%", cpu_usage);
+
+        // Wait one second before the next reading
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 }
 
 #[cfg(test)]
