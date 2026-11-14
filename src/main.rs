@@ -45,6 +45,43 @@ fn main() {
 
         system::process::display_processes(&mut sys);
 
+        // NVIDIA GPU monitoring
+        match gpu::nvidia::get_nvidia_info() {
+            Ok(info) => {
+                println!("========== NVIDIA GPU ==========");
+                println!("GPU Usage: {}%", info.utilization);
+
+                println!("VRAM: {} MiB / {} MiB", info.memory_used, info.memory_total);
+
+                println!("Temperature: {} °C", info.temperature);
+                println!("Power Draw: {:.2} W", info.power_draw);
+            }
+
+            Err(error) => {
+                eprintln!("NVIDIA Monitoring Error: {}", error);
+            }
+        }
+
+        // Intel Integrated GPU monitoring
+        match gpu::integrated::get_integrated_info() {
+            Ok(info) => {
+                println!("========== INTEL INTEGRATED GPU ==========");
+
+                println!("Render/3D Usage: {:.2}%", info.render_usage);
+                println!("Blitter Usage: {:.2}%", info.blitter_usage);
+                println!("Video Usage: {:.2}%", info.video_usage);
+                println!("Video Enhancement: {:.2}%", info.video_enhance_usage);
+
+                println!("GPU Power: {:.2} W", info.gpu_power);
+                println!("Package Power: {:.2} W", info.package_power);
+                println!("RC6: {:.2}%", info.rc6);
+            }
+
+            Err(error) => {
+                eprintln!("Intel GPU Monitoring Error: {}", error);
+            }
+        }
+
         println!("--------------------------------");
 
         // Wait one second before the next reading
