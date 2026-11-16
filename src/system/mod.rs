@@ -1,3 +1,4 @@
+pub mod analysis;
 pub mod cpu;
 pub mod info;
 pub mod memory;
