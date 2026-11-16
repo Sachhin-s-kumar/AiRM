@@ -23,12 +23,14 @@ fn main() {
     // Initialize system monitor only once
     let mut sys = sysinfo::System::new_all().expect("Failed to initialize system information");
 
-    // Continuously monitor CPU usage
+    // Continuously monitor system resources
     loop {
+        // CPU monitoring
         let cpu_usage = system::cpu::get_cpu_usage(&mut sys);
 
         println!("CPU Usage: {:.2}%", cpu_usage);
 
+        // RAM monitoring
         let memory = system::memory::get_memory_usage(&mut sys);
 
         let gb = 1024.0 * 1024.0 * 1024.0;
@@ -43,7 +45,32 @@ fn main() {
 
         println!("Available RAM: {:.2} GB", memory.available as f64 / gb);
 
+        // Process monitoring
         system::process::display_processes(&mut sys);
+
+        // AI/ML workload detection
+        println!("========== AI/ML WORKLOADS ==========");
+
+        let mut detected = false;
+
+        for (pid, process) in sys.processes() {
+            if let Some(workload) = system::workload::detect_ai_workload(process) {
+                detected = true;
+
+                println!(
+                    "PID: {} | Process: {} | Type: {}",
+                    pid,
+                    process.name().to_string_lossy(),
+                    workload
+                );
+            }
+        }
+
+        if !detected {
+            println!("No AI/ML workloads detected.");
+        }
+
+        println!("=====================================");
 
         // NVIDIA GPU monitoring
         match gpu::nvidia::get_nvidia_info() {
