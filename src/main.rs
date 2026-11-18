@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 mod gpu;
 mod scheduler;
@@ -6,6 +8,7 @@ mod utils;
 
 const APP_NAME: &str = "AiRM";
 const APP_VERSION: &str = "0.1.0";
+const BATCH_SIZE: usize = 10;
 
 fn get_version() -> &'static str {
     APP_VERSION
@@ -22,8 +25,11 @@ fn main() {
     println!("----------------------------------");
 
     // Initialize system monitor only once.
-    let mut sys = sysinfo::System::new_all()
-        .expect("Failed to initialize system information");
+    let mut sys = sysinfo::System::new_all().expect("Failed to initialize system information");
+
+    // Store telemetry observations before writing a batch.
+    let mut telemetry_batch = Vec::new();
+    let mut batch_cycles = 0;
 
     // Continuously monitor system resources.
     loop {
@@ -48,14 +54,10 @@ fn main() {
         system::process::display_processes(&mut sys);
 
         // Collect process telemetry from the refreshed snapshot.
-        let telemetry =
-            system::telemetry::collect_process_telemetry(&sys);
+        let telemetry = system::telemetry::collect_process_telemetry(&sys);
 
         println!("========== TELEMETRY COLLECTION ==========");
-        println!(
-            "Process observations collected: {}",
-            telemetry.len()
-        );
+        println!("Process observations collected: {}", telemetry.len());
         println!("==========================================");
 
         // AI/ML workload detection using collected telemetry.
@@ -69,9 +71,7 @@ fn main() {
 
                 println!(
                     "PID: {} | Process: {} | Type: {}",
-                    observation.pid,
-                    observation.process_name,
-                    workload
+                    observation.pid, observation.process_name, workload
                 );
             }
         }
@@ -82,6 +82,40 @@ fn main() {
 
         println!("=====================================");
 
+        // Add current observations to the telemetry batch.
+        telemetry_batch.extend(telemetry);
+        batch_cycles += 1;
+
+        // Store telemetry after the configured number of cycles.
+        if batch_cycles >= BATCH_SIZE {
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis();
+
+            let mut output_path = PathBuf::from("data/telemetry");
+
+            output_path.push(format!("telemetry_{}.json.zst", timestamp));
+
+            match system::storage::store_telemetry(&telemetry_batch, &output_path) {
+                Ok(fingerprint) => {
+                    println!("========== TELEMETRY STORAGE ==========");
+                    println!("Records stored: {}", telemetry_batch.len());
+                    println!("File: {}", output_path.display());
+                    println!("SHA-256: {}", fingerprint);
+                    println!("=======================================");
+
+                    // Clear the batch after successful storage.
+                    telemetry_batch.clear();
+                    batch_cycles = 0;
+                }
+
+                Err(error) => {
+                    eprintln!("Telemetry storage error: {}", error);
+                }
+            }
+        }
+
         // NVIDIA GPU monitoring.
         let mut nvidia_gpu_usage = None;
 
@@ -89,11 +123,7 @@ fn main() {
             Ok(info) => {
                 println!("========== NVIDIA GPU ==========");
                 println!("GPU Usage: {}%", info.utilization);
-                println!(
-                    "VRAM: {} MiB / {} MiB",
-                    info.memory_used,
-                    info.memory_total
-                );
+                println!("VRAM: {} MiB / {} MiB", info.memory_used, info.memory_total);
                 println!("Temperature: {} °C", info.temperature);
                 println!("Power Draw: {:.2} W", info.power_draw);
 
@@ -114,10 +144,7 @@ fn main() {
                 println!("Render/3D Usage: {:.2}%", info.render_usage);
                 println!("Blitter Usage: {:.2}%", info.blitter_usage);
                 println!("Video Usage: {:.2}%", info.video_usage);
-                println!(
-                    "Video Enhancement: {:.2}%",
-                    info.video_enhance_usage
-                );
+                println!("Video Enhancement: {:.2}%", info.video_enhance_usage);
                 println!("GPU Power: {:.2} W", info.gpu_power);
                 println!("Package Power: {:.2} W", info.package_power);
                 println!("RC6: {:.2}%", info.rc6);
