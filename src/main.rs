@@ -1,3 +1,4 @@
+
 mod gpu;
 mod scheduler;
 mod system;
@@ -21,7 +22,8 @@ fn main() {
     println!("----------------------------------");
 
     // Initialize system monitor only once.
-    let mut sys = sysinfo::System::new_all().expect("Failed to initialize system information");
+    let mut sys = sysinfo::System::new_all()
+        .expect("Failed to initialize system information");
 
     // Continuously monitor system resources.
     loop {
@@ -42,21 +44,33 @@ fn main() {
         println!("Available RAM: {:.2} GB", memory.available as f64 / gb);
 
         // Process monitoring.
+        // This refreshes process information for the current cycle.
         system::process::display_processes(&mut sys);
 
-        // AI/ML workload detection.
+        // Collect process telemetry from the refreshed snapshot.
+        let telemetry =
+            system::telemetry::collect_process_telemetry(&sys);
+
+        println!("========== TELEMETRY COLLECTION ==========");
+        println!(
+            "Process observations collected: {}",
+            telemetry.len()
+        );
+        println!("==========================================");
+
+        // AI/ML workload detection using collected telemetry.
         println!("========== AI/ML WORKLOADS ==========");
 
         let mut detected = false;
 
-        for (pid, process) in sys.processes() {
-            if let Some(workload) = system::workload::detect_ai_workload(process) {
+        for observation in &telemetry {
+            if let Some(workload) = &observation.heuristic_label {
                 detected = true;
 
                 println!(
                     "PID: {} | Process: {} | Type: {}",
-                    pid,
-                    process.name().to_string_lossy(),
+                    observation.pid,
+                    observation.process_name,
                     workload
                 );
             }
@@ -75,7 +89,11 @@ fn main() {
             Ok(info) => {
                 println!("========== NVIDIA GPU ==========");
                 println!("GPU Usage: {}%", info.utilization);
-                println!("VRAM: {} MiB / {} MiB", info.memory_used, info.memory_total);
+                println!(
+                    "VRAM: {} MiB / {} MiB",
+                    info.memory_used,
+                    info.memory_total
+                );
                 println!("Temperature: {} °C", info.temperature);
                 println!("Power Draw: {:.2} W", info.power_draw);
 
@@ -96,7 +114,10 @@ fn main() {
                 println!("Render/3D Usage: {:.2}%", info.render_usage);
                 println!("Blitter Usage: {:.2}%", info.blitter_usage);
                 println!("Video Usage: {:.2}%", info.video_usage);
-                println!("Video Enhancement: {:.2}%", info.video_enhance_usage);
+                println!(
+                    "Video Enhancement: {:.2}%",
+                    info.video_enhance_usage
+                );
                 println!("GPU Power: {:.2} W", info.gpu_power);
                 println!("Package Power: {:.2} W", info.package_power);
                 println!("RC6: {:.2}%", info.rc6);
