@@ -5,7 +5,7 @@ pub struct NvidiaInfo {
     pub utilization: u32,
     pub memory_used: u64,
     pub memory_total: u64,
-    pub temperature: u32,
+    pub temperature: f32,
     pub power_draw: f32,
 }
 
@@ -21,7 +21,6 @@ pub fn get_nvidia_info() -> Result<NvidiaInfo, String> {
     }
 
     let data = String::from_utf8_lossy(&output.stdout);
-
     let values: Vec<&str> = data.trim().split(',').collect();
 
     if values.len() != 5 {
@@ -46,7 +45,7 @@ pub fn get_nvidia_info() -> Result<NvidiaInfo, String> {
 
         temperature: values[3]
             .trim()
-            .parse()
+            .parse::<f32>()
             .map_err(|e| format!("Temperature error: {}", e))?,
 
         power_draw: values[4]

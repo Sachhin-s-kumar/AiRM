@@ -13,7 +13,6 @@ pub struct ProcessTelemetry {
     pub heuristic_label: Option<String>,
 }
 
-
 /// Collects telemetry observations from running processes.
 pub fn collect_process_telemetry(sys: &System) -> Vec<ProcessTelemetry> {
     // Generate a timestamp for this collection cycle.
@@ -27,8 +26,7 @@ pub fn collect_process_telemetry(sys: &System) -> Vec<ProcessTelemetry> {
         .iter()
         .map(|(pid, process)| {
             let heuristic_label =
-                crate::system::workload::detect_ai_workload(process)
-                    .map(String::from);
+                crate::system::workload::detect_ai_workload(process).map(String::from);
 
             ProcessTelemetry {
                 timestamp_unix_ms: timestamp,

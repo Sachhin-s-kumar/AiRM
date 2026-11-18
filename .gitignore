@@ -1,1 +1,16 @@
+
 /target
+
+# Python environments
+.venv-yolo/
+__pycache__/
+*.pyc
+
+# YOLO training outputs
+runs/
+
+# Local telemetry and datasets
+data/
+
+# Model weights
+*.pt
